@@ -393,7 +393,7 @@ function DashboardContent() {
                                         height: 1150,
                                     }}
                                 >
-                                    Здесь будут диаграммы!
+                                    {!spentDataset && !priceDataset && <h2>Здесь будут диаграммы!</h2>}
                                     {spentDataset && <Pie data={spentDataset}/>}
                                     {priceDataset && <Bar data={priceDataset}/>}
 
