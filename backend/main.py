@@ -1,6 +1,25 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel, Field
+from fastapi.middleware.cors import CORSMiddleware
 
+origins = [
+    "http://localhost",
+    "http://127.0.0.1",
+    "http://localhost:8000",
+    "http://localhost:3000",
+    "http://127.0.0.1:8000",
+    "*",
+]
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class EconomyRequest(BaseModel):
 
@@ -19,9 +38,6 @@ class EconomyRequest(BaseModel):
     tax: float = Field(title='НДС')
     replication: int = Field(title='Тиражирование')
     additional_profit: float = Field(title='Дополнительная прибыль')
-
-
-app = FastAPI()
 
 
 @app.post("/calculate/")
