@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -21,6 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 class EconomyRequest(BaseModel):
 
     time_develop: int = Field(title="Время разработки")
@@ -31,35 +32,113 @@ class EconomyRequest(BaseModel):
     energy_price: float = Field(title='Цена 1 кВт-ч электроэнергии')
     salary_staff: int = Field(title='Заработная плата в месяц персонала, обслуживающего компьютер')
     count_serviced_units: int = Field(title='Количество обслуживаемых им единиц оборудования')
-    book_value: int = Field(title='Количество обслуживаемых им единиц оборудования')
+    book_value: int = Field(title='Балансовая стоимость компьютера')
     time_coding: int = Field(title='Время кодирования')
-    time_debugging: int = Field(title='Времям отладки')
+    time_debugging: int = Field(title='Время отладки')
     profitability: float = Field(title='Норматив рентабельности')
     tax: float = Field(title='НДС')
     replication: int = Field(title='Тиражирование')
     additional_profit: float = Field(title='Дополнительная прибыль')
 
 
+def salary_developers_calc(time_develop, salary):
+    """Функция рассчета заработной платы разрабочтиков"""
+    return time_develop * salary
+
+
+def additional_salary_calc(add_coef, salary_developers):
+    """Функция рассчета дополнительной заработной плата"""
+    return add_coef * salary_developers
+
+
+def social_contributions_calc(salary_developers, additional_salary):
+    """Функция рассчета отчислений на социальные нужды"""
+    return (salary_developers + additional_salary) * 0.356
+
+
+def overhead_costs_calc(salary_developers, overheads):
+    """Функция рассчета накладных расходов"""
+    return (salary_developers * overheads) / 100
+
+
+def cost_power_calc(power_consumption, working_fund, energy_price):
+    """Функция рассчета стоимости потребляемой за год электроэнергии"""
+    return power_consumption * working_fund * energy_price
+
+
+def maintenance_costs_calc(salary_staff, count_serviced_units):
+    """Функция рассчета расходов на обслуживание компьютера за год"""
+    return salary_staff * 12 / count_serviced_units
+
+
+def depreciation_charges_calc(book_value):
+    """Функция рассчета амортизационных отчислений"""
+    return 50 * book_value / 100
+
+
+def repair_costs_calc(book_value):
+    """Функция рассчета расходов на текущий ремонт"""
+    return 0.05 * book_value
+
+
+def operating_costs_calc(cost_power, maintenance_costs, depreciation_charges, repair_costs, working_fund):
+    """Функция рассчета накладных расходы"""
+    return (cost_power + maintenance_costs + depreciation_charges + repair_costs) / working_fund
+
+
+def software_cost_calc(salary_developers, additional_salary, social_contributions, overhead_costs, operating_costs):
+    """Функция расчета затрат на разработку программного обеспечения"""
+    return salary_developers + additional_salary + social_contributions + overhead_costs + operating_costs
+
+
+def cost_app_calc(software_cost, profitability):
+    """Функция рассчета цены разработанного ПО"""
+    return software_cost * (1 + profitability / 100)
+
+
+def low_limit_calc(operating_costs, profitability, replication, tax):
+    """Функция рассчета нижнего предела цены"""
+    return operating_costs * (1 + profitability / 100) / replication * (1 + tax / 100)
+
+
+def contract_price_calc(low_limit, additional_profit):
+    """Функция рассчета договорной цены"""
+    return low_limit * (1 + additional_profit / 100)
+
+
 @app.post("/calculate/")
 async def calculate(item: EconomyRequest):
     # рассчет Затрат на разработку программного обеспечения
-    salary_developers = item.time_develop * item.salary
-    additional_salary = item.add_coeff * salary_developers
-    social_contributions = (salary_developers + additional_salary) * 0.356
-    overhead_costs = (salary_developers * item.overheads) / 100
+    # заработная плата разрабочтиков
+    salary_developers = salary_developers_calc(item.time_develop, item.salary)
+    # дополнительная заработная плата
+    additional_salary = additional_salary_calc(item.add_coeff, salary_developers)
+    # отчисления на социальные нужды
+    social_contributions = social_contributions_calc(salary_developers, additional_salary)
+    # накладные расходы
+    overhead_costs = overhead_costs_calc(salary_developers, item.overheads)
+    # годовой полезный фонд
     working_fund = 8 * 288
-    cost_power = item.power_consumption * working_fund * item.energy_price
-    maintenance_costs = item.salary_staff * 12 / item.count_serviced_units
-    depreciation_charges = 50 * item.book_value / 100
-    repair_costs = 0.05 * item.book_value
-    operating_costs = (cost_power + maintenance_costs + depreciation_charges + repair_costs) / working_fund
-    software_cost = salary_developers + additional_salary + social_contributions + overhead_costs + operating_costs
+    # стоимость потребляемой за год электроэнергии
+    cost_power = cost_power_calc(item.power_consumption, working_fund, item.energy_price)
+    # расходы на обслуживание компьютера за год
+    maintenance_costs = maintenance_costs_calc(item.salary_staff, item.count_serviced_units)
+    # амортизационные отчисления
+    depreciation_charges = depreciation_charges_calc(item.book_value)
+    # расходы на текущий ремонт
+    repair_costs = repair_costs_calc(item.book_value)
+    # накладные расходы
+    operating_costs = operating_costs_calc(cost_power, maintenance_costs, depreciation_charges, repair_costs,
+                                           working_fund)
+    # Затраты на разработку программного обеспечения
+    software_cost = software_cost_calc(salary_developers, additional_salary, social_contributions,
+                                       overhead_costs, operating_costs)
     # Цена разработанного ПО
-    cost_app = software_cost * (1 + item.profitability / 100)
+    cost_app = cost_app_calc(software_cost, item.profitability)
     # Нижний предел цены
-    low_limit = operating_costs * (1 + item.profitability / 100) / item.replication * (1 + item.tax / 100)
+    low_limit = low_limit_calc(operating_costs, item.profitability, item.replication, item.tax)
     # Договорная цена
-    contract_price = low_limit * (1 + item.additional_profit / 100)
+    contract_price = contract_price_calc(low_limit, item.additional_profit)
     return {
         'software_cost': software_cost,
         'cost_app': cost_app,
