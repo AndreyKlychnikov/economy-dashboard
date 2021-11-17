@@ -25,7 +25,7 @@ app.add_middleware(
 class EconomyRequest(BaseModel):
 
     time_develop: int = Field(title="Время разработки")
-    salary: int = Field(title="Оплата труда разработчика")
+    salary: float = Field(title="Оплата труда разработчика")
     add_coeff: float = Field(title='Коэффициент, учитывающий дополнительную заработную плату')
     overheads: float = Field(title='Процент накладных расходов организации')
     power_consumption: float = Field(title='Потребляемая мощность')
