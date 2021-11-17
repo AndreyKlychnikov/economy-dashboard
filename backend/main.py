@@ -96,9 +96,9 @@ def cost_app_calc(software_cost, profitability):
     return software_cost * (1 + profitability / 100)
 
 
-def low_limit_calc(operating_costs, profitability, replication, tax):
+def low_limit_calc(software_costs, profitability, replication, tax):
     """Функция рассчета нижнего предела цены"""
-    return operating_costs * (1 + profitability / 100) / replication * (1 + tax / 100)
+    return software_costs * (1 + profitability / 100) / replication * (1 + tax / 100)
 
 
 def contract_price_calc(low_limit, additional_profit):
@@ -136,7 +136,7 @@ async def calculate(item: EconomyRequest):
     # Цена разработанного ПО
     cost_app = cost_app_calc(software_cost, item.profitability)
     # Нижний предел цены
-    low_limit = low_limit_calc(operating_costs, item.profitability, item.replication, item.tax)
+    low_limit = low_limit_calc(software_cost, item.profitability, item.replication, item.tax)
     # Договорная цена
     contract_price = contract_price_calc(low_limit, item.additional_profit)
     return {
