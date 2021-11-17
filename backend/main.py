@@ -24,20 +24,20 @@ app.add_middleware(
 
 class EconomyRequest(BaseModel):
 
-    time_develop: int = Field(title="Время разработки")
+    time_develop: float = Field(title="Время разработки")
     salary: float = Field(title="Оплата труда разработчика")
     add_coeff: float = Field(title='Коэффициент, учитывающий дополнительную заработную плату')
     overheads: float = Field(title='Процент накладных расходов организации')
     power_consumption: float = Field(title='Потребляемая мощность')
     energy_price: float = Field(title='Цена 1 кВт-ч электроэнергии')
-    salary_staff: int = Field(title='Заработная плата в месяц персонала, обслуживающего компьютер')
-    count_serviced_units: int = Field(title='Количество обслуживаемых им единиц оборудования')
-    book_value: int = Field(title='Балансовая стоимость компьютера')
-    time_coding: int = Field(title='Время кодирования')
-    time_debugging: int = Field(title='Время отладки')
+    salary_staff: float = Field(title='Заработная плата в месяц персонала, обслуживающего компьютер')
+    count_serviced_units: float = Field(title='Количество обслуживаемых им единиц оборудования')
+    book_value: float = Field(title='Балансовая стоимость компьютера')
+    time_coding: float = Field(title='Время кодирования')
+    time_debugging: float = Field(title='Время отладки')
     profitability: float = Field(title='Норматив рентабельности')
     tax: float = Field(title='НДС')
-    replication: int = Field(title='Тиражирование')
+    replication: float = Field(title='Тиражирование')
     additional_profit: float = Field(title='Дополнительная прибыль')
 
 
@@ -81,9 +81,10 @@ def repair_costs_calc(book_value):
     return 0.05 * book_value
 
 
-def operating_costs_calc(cost_power, maintenance_costs, depreciation_charges, repair_costs, working_fund):
+def operating_costs_calc(cost_power, maintenance_costs, depreciation_charges, repair_costs,
+                         working_fund, time_coding, time_debugging):
     """Функция рассчета накладных расходы"""
-    return (cost_power + maintenance_costs + depreciation_charges + repair_costs) / working_fund
+    return ((cost_power + maintenance_costs + depreciation_charges + repair_costs) / working_fund) * (time_coding + time_debugging) * 8
 
 
 def software_cost_calc(salary_developers, additional_salary, social_contributions, overhead_costs, operating_costs):
@@ -129,7 +130,7 @@ async def calculate(item: EconomyRequest):
     repair_costs = repair_costs_calc(item.book_value)
     # накладные расходы
     operating_costs = operating_costs_calc(cost_power, maintenance_costs, depreciation_charges, repair_costs,
-                                           working_fund)
+                                           working_fund, item.time_coding, item.time_debugging)
     # Затраты на разработку программного обеспечения
     software_cost = software_cost_calc(salary_developers, additional_salary, social_contributions,
                                        overhead_costs, operating_costs)
