@@ -15,7 +15,7 @@ def test_additional_salary_calc():
 
 
 def test_social_contributions_calc():
-    assert social_contributions_calc(75000, 84000) == 56603
+    assert social_contributions_calc(75000, 84000) == 56604
 
 
 def test_overhead_costs_calc():
