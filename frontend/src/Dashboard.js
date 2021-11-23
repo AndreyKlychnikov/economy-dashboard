@@ -157,11 +157,11 @@ function DashboardContent() {
                         data: chartData,
                         backgroundColor: spentPieBackgroundColors
                     },
-                    // {
-                    //     label: 'Затраты в процентах',
-                    //     data: chartData.map(el => el / chartData.reduce((a, b) => a + b, 0) * 100),
-                    //     backgroundColor: spentPieBackgroundColors
-                    // },
+                    {
+                        label: 'Затраты в процентах',
+                        data: chartData.map(el => el / chartData.reduce((a, b) => a + b, 0) * 100),
+                        backgroundColor: spentPieBackgroundColors
+                    },
                 ]
             })
             const priceChartData = [
