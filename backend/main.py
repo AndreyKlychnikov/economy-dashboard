@@ -24,20 +24,20 @@ app.add_middleware(
 
 class EconomyRequest(BaseModel):
 
-    time_develop: int = Field(title="Время разработки")
-    salary: int = Field(title="Оплата труда разработчика")
+    time_develop: float = Field(title="Время разработки")
+    salary: float = Field(title="Оплата труда разработчика")
     add_coeff: float = Field(title='Коэффициент, учитывающий дополнительную заработную плату')
     overheads: float = Field(title='Процент накладных расходов организации')
     power_consumption: float = Field(title='Потребляемая мощность')
     energy_price: float = Field(title='Цена 1 кВт-ч электроэнергии')
-    salary_staff: int = Field(title='Заработная плата в месяц персонала, обслуживающего компьютер')
-    count_serviced_units: int = Field(title='Количество обслуживаемых им единиц оборудования')
-    book_value: int = Field(title='Балансовая стоимость компьютера')
-    time_coding: int = Field(title='Время кодирования')
-    time_debugging: int = Field(title='Время отладки')
+    salary_staff: float = Field(title='Заработная плата в месяц персонала, обслуживающего компьютер')
+    count_serviced_units: float = Field(title='Количество обслуживаемых им единиц оборудования')
+    book_value: float = Field(title='Балансовая стоимость компьютера')
+    time_coding: float = Field(title='Время кодирования')
+    time_debugging: float = Field(title='Время отладки')
     profitability: float = Field(title='Норматив рентабельности')
     tax: float = Field(title='НДС')
-    replication: int = Field(title='Тиражирование')
+    replication: float = Field(title='Тиражирование')
     additional_profit: float = Field(title='Дополнительная прибыль')
 
 
@@ -81,9 +81,10 @@ def repair_costs_calc(book_value):
     return 0.05 * book_value
 
 
-def operating_costs_calc(cost_power, maintenance_costs, depreciation_charges, repair_costs, working_fund):
-    """Функция рассчета накладных расходы"""
-    return (cost_power + maintenance_costs + depreciation_charges + repair_costs) / working_fund
+def operating_costs_calc(cost_power, maintenance_costs, depreciation_charges, repair_costs,
+                         working_fund, time_coding, time_debugging):
+    """Функция рассчета эксплутационных расходов"""
+    return ((cost_power + maintenance_costs + depreciation_charges + repair_costs) / working_fund) * (time_coding + time_debugging) * 8
 
 
 def software_cost_calc(salary_developers, additional_salary, social_contributions, overhead_costs, operating_costs):
@@ -96,9 +97,9 @@ def cost_app_calc(software_cost, profitability):
     return software_cost * (1 + profitability / 100)
 
 
-def low_limit_calc(operating_costs, profitability, replication, tax):
+def low_limit_calc(software_costs, profitability, replication, tax):
     """Функция рассчета нижнего предела цены"""
-    return operating_costs * (1 + profitability / 100) / replication * (1 + tax / 100)
+    return software_costs * (1 + profitability / 100) / replication * (1 + tax / 100)
 
 
 def contract_price_calc(low_limit, additional_profit):
@@ -127,18 +128,45 @@ async def calculate(item: EconomyRequest):
     depreciation_charges = depreciation_charges_calc(item.book_value)
     # расходы на текущий ремонт
     repair_costs = repair_costs_calc(item.book_value)
-    # накладные расходы
+    # Эксплутационные расходы
     operating_costs = operating_costs_calc(cost_power, maintenance_costs, depreciation_charges, repair_costs,
-                                           working_fund)
+                                           working_fund, item.time_coding, item.time_debugging)
     # Затраты на разработку программного обеспечения
     software_cost = software_cost_calc(salary_developers, additional_salary, social_contributions,
                                        overhead_costs, operating_costs)
     # Цена разработанного ПО
     cost_app = cost_app_calc(software_cost, item.profitability)
     # Нижний предел цены
-    low_limit = low_limit_calc(operating_costs, item.profitability, item.replication, item.tax)
+    low_limit = low_limit_calc(software_cost, item.profitability, item.replication, item.tax)
     # Договорная цена
     contract_price = contract_price_calc(low_limit, item.additional_profit)
+    with open('result.txt', 'w', encoding="utf-8") as file:
+        file.write('Входные данные:')
+        file.write('Время разработки = {}\n'.format(item.time_develop))
+        file.write('Оплата труда разработчика = {}\n'.format(item.salary))
+        file.write('Коэффициент, учитывающий дополнительную заработную плату = {}\n'.format(item.add_coeff))
+        file.write('Процент накладных расходов организации = {}\n'.format(item.overheads))
+        file.write('Потребляемая мощность = {}\n'.format(item.power_consumption))
+        file.write('Цена 1 кВт-ч электроэнергии = {}\n'.format(item.energy_price))
+        file.write('Заработная плата в месяц персонала, обслуживающего компьютер = {}\n'.format(item.salary_staff))
+        file.write('Количество обслуживаемых им единиц оборудования = {}\n'.format(item.count_serviced_units))
+        file.write('Балансовая стоимость компьютера = {}\n'.format(item.book_value))
+        file.write('Время кодирования = {}\n'.format(item.time_coding))
+        file.write('Норматив рентабельности = {}\n'.format(item.profitability))
+        file.write('НДС = {}\n'.format(item.tax))
+        file.write('Тиражирование = {}\n'.format(item.replication))
+        file.write('Дополнительная прибыль = {}\n'.format(item.additional_profit))
+        file.write('Результаты:\n')
+        file.write('Затраты на разработку ПО = {}\n'.format(software_cost))
+        file.write('Цена разработанного ПО = {}\n'.format(cost_app))
+        file.write('Нижний предел цены = {}\n'.format(low_limit))
+        file.write('Договорная цена = {}\n'.format(contract_price))
+        file.write('Заработная плата разрабочтиков = {}\n'.format(salary_developers))
+        file.write('Дополнительная заработная плата = {}\n'.format(additional_salary))
+        file.write('Отчисления на социальные нужды = {}\n'.format(social_contributions))
+        file.write('Накладные расходы = {}\n'.format(overhead_costs))
+        file.write('Эксплутационные расходы = {}\n'.format(operating_costs))
+
     return {
         'software_cost': software_cost,
         'cost_app': cost_app,
